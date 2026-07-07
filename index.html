@@ -93,11 +93,12 @@
             display: flex;
             gap: 10px;
             justify-content: center;
+            align-items: center;
             margin-bottom: 30px;
         }
 
-        /* Gomb és Select közös stílusa */
-        .btn, .select-difficulty {
+        /* Gomb, Select és Info Panel stílusa */
+        .btn, .select-difficulty, .info-panel {
             background-color: transparent;
             color: #94a3b8;
             border: 2px solid #334155;
@@ -111,9 +112,18 @@
             outline: none;
         }
 
-        /* Select egyedi stílus beállításai sötét módhoz */
         .select-difficulty {
             background-color: #1e1e24;
+        }
+
+        /* Info panel (Lépésszámláló) egyedi stílusa */
+        .info-panel {
+            cursor: default;
+            background-color: #1a1a1e;
+            border-color: #22d3ee;
+            color: #22d3ee;
+            min-width: 110px;
+            text-align: center;
         }
 
         .btn:hover, .select-difficulty:hover {
@@ -121,7 +131,6 @@
             border-color: #06b6d4;
         }
 
-        /* Reset gomb egyedi hover effekt */
         .btn:hover {
             border-color: #f43f5e;
             background-color: rgba(244, 63, 94, 0.1);
@@ -164,13 +173,15 @@
 
         <div class="controls">
             <select id="difficulty-select" class="select-difficulty">
-                <option value="5">Easy (5 steps)</option>
-                <option value="10" selected>Normal (10 steps)</option>
-                <option value="15">Hard (15 steps)</option>
-                <option value="30">Hardcore (30 steps)</option>
+                <option value="5">Easy (5)</option>
+                <option value="10" selected>Normal (10)</option>
+                <option value="15">Hard (15)</option>
+                <option value="30">Hardcore (30)</option>
             </select>
             
             <button id="reset-btn" class="btn">RESET</button>
+
+            <div id="move-counter" class="info-panel">Moves: 0</div>
         </div>
 
         <footer class="message-area">
@@ -182,20 +193,20 @@
         const BOARD_SIZE = 5;
         let board = [];
         let gameActive = true;
-        let currentDifficulty = 10; // Alapértelmezett a Normal (10 lépés)
+        let currentDifficulty = 10;
+        let moveCount = 0; // Új változó a lépések követésére
 
         const boardContainer = document.getElementById('board');
         const messageElement = document.getElementById('game-message');
         const resetBtn = document.getElementById('reset-btn');
         const difficultySelect = document.getElementById('difficulty-select');
+        const moveCounterElement = document.getElementById('move-counter');
 
         // Játék indítása
         initGame();
 
-        // Eseménykezelők
         resetBtn.addEventListener('click', initGame);
         
-        // Ha a játékos megváltoztatja a szintet, azonnal új játékot indítunk az új beállítással
         difficultySelect.addEventListener('change', (e) => {
             currentDifficulty = parseInt(e.target.value);
             initGame();
@@ -203,11 +214,13 @@
 
         function initGame() {
             gameActive = true;
+            moveCount = 0; // Alaphelyzetbe állítjuk a számlálót
+            updateMoveCounter();
+            
             messageElement.textContent = "Good luck! Find the pattern.";
             messageElement.classList.remove('victory');
             board = Array(BOARD_SIZE).fill(0).map(() => Array(BOARD_SIZE).fill(0));
             
-            // Most már a kiválasztott lépésszámot adjuk át
             shuffleBoard(currentDifficulty);
             renderBoard();
         }
@@ -249,13 +262,24 @@
 
         function handleCellClick(x, y) {
             if (!gameActive) return;
+            
+            // Növeljük a lépésszámot és frissítjük a kijelzőt
+            moveCount++;
+            updateMoveCounter();
+
             toggleLights(x, y);
             renderBoard();
+            
             if (checkVictory()) {
                 gameActive = false;
-                messageElement.textContent = "ALL LIGHTS OUT! STORE CLOSED.";
+                messageElement.textContent = `ALL LIGHTS OUT IN ${moveCount} MOVES!`;
                 messageElement.classList.add('victory');
             }
+        }
+
+        // Lépésszámláló szövegének frissítése
+        function updateMoveCounter() {
+            moveCounterElement.textContent = `Moves: ${moveCount}`;
         }
 
         function checkVictory() {
