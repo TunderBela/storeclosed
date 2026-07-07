@@ -9,28 +9,94 @@
 <body>
 
     <main class="game-container">
-        <!-- Fejléc -->
         <header class="game-header">
             <h1>STORE CLOSED</h1>
             <p class="subtitle">Switch off all the lights before you leave.</p>
         </header>
 
-        <!-- Játéktér -->
-        <div id="board" class="game-board">
-            <!-- Ide generálja majd a JS a 25 darab .cell elemet -->
-        </div>
+        <div id="board" class="game-board"></div>
 
-        <!-- Vezérlés (Reset gomb) -->
         <div class="controls">
             <button id="reset-btn" class="btn">RESET GAME</button>
         </div>
 
-        <!-- Üzenetek helye a képernyő alján -->
         <footer class="message-area">
             <p id="game-message">Good luck! Find the pattern.</p>
         </footer>
     </main>
 
-    <script src="script.js" defer></script>
+    <script>
+        const BOARD_SIZE = 5;
+        let board = [];
+        let gameActive = true;
+
+        const boardContainer = document.getElementById('board');
+        const messageElement = document.getElementById('game-message');
+        const resetBtn = document.getElementById('reset-btn');
+
+        // Azonnal elindítjuk, amint ideér a böngésző
+        initGame();
+
+        resetBtn.addEventListener('click', initGame);
+
+        function initGame() {
+            gameActive = true;
+            messageElement.textContent = "Good luck! Find the pattern.";
+            messageElement.classList.remove('victory');
+            board = Array(BOARD_SIZE).fill(0).map(() => Array(BOARD_SIZE).fill(0));
+            shuffleBoard(15);
+            renderBoard();
+        }
+
+        function shuffleBoard(steps) {
+            for (let i = 0; i < steps; i++) {
+                const randomX = Math.floor(Math.random() * BOARD_SIZE);
+                const randomY = Math.floor(Math.random() * BOARD_SIZE);
+                toggleLights(randomX, randomY);
+            }
+            if (checkVictory()) {
+                shuffleBoard(steps);
+            }
+        }
+
+        function toggleLights(x, y) {
+            const coordinates = [
+                [x, y], [x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]
+            ];
+            coordinates.forEach(([cx, cy]) => {
+                if (cx >= 0 && cx < BOARD_SIZE && cy >= 0 && cy < BOARD_SIZE) {
+                    board[cx][cy] ^= 1;
+                }
+            });
+        }
+
+        function renderBoard() {
+            boardContainer.innerHTML = '';
+            for (let x = 0; x < BOARD_SIZE; x++) {
+                for (let y = 0; y < BOARD_SIZE; y++) {
+                    const cell = document.createElement('button');
+                    cell.classList.add('cell');
+                    cell.classList.add(board[x][y] === 1 ? 'on' : 'off');
+                    cell.addEventListener('click', () => handleCellClick(x, y));
+                    boardContainer.appendChild(cell);
+                }
+            }
+        }
+
+        function handleCellClick(x, y) {
+            if (!gameActive) return;
+            toggleLights(x, y);
+            renderBoard();
+            if (checkVictory()) {
+                gameActive = false;
+                messageElement.textContent = "ALL LIGHTS OUT! STORE CLOSED.";
+                messageElement.classList.add('victory');
+            }
+        }
+
+        function checkVictory() {
+            return !board.some(row => row.includes(1));
+        }
+    </script>
 </body>
 </html>
