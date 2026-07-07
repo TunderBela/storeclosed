@@ -4,7 +4,153 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Store Closed</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Alapbeállítások és sötét háttér */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #121214;
+            color: #e2e8f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Központi konténer */
+        .game-container {
+            text-align: center;
+            max-width: 420px;
+            width: 100%;
+        }
+
+        /* Fejléc stílusok */
+        .game-header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: #ffffff;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            margin-bottom: 25px;
+        }
+
+        /* A 5x5-ös Grid */
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            background-color: #1e1e24;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            margin-bottom: 25px;
+        }
+
+        /* A cellák (Lámpák) alapstílusa */
+        .cell {
+            aspect-ratio: 1;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border: none;
+        }
+
+        /* LEKAPCSOLT állapot (Sötét) */
+        .cell.off {
+            background-color: #2d2d34;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.6);
+        }
+
+        .cell.off:hover {
+            background-color: #3f3f4a;
+        }
+
+        /* BEKAPCSOLT állapot (Világít) */
+        .cell.on {
+            background-color: #06b6d4;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.6), inset 0 0 5px rgba(255,255,255,0.5);
+        }
+
+        .cell.on:hover {
+            background-color: #22d3ee;
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.8);
+        }
+
+        /* Vezérlők konténere */
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        /* Gomb és Select közös stílusa */
+        .btn, .select-difficulty {
+            background-color: transparent;
+            color: #94a3b8;
+            border: 2px solid #334155;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        /* Select egyedi stílus beállításai sötét módhoz */
+        .select-difficulty {
+            background-color: #1e1e24;
+        }
+
+        .btn:hover, .select-difficulty:hover {
+            color: #ffffff;
+            border-color: #06b6d4;
+        }
+
+        /* Reset gomb egyedi hover effekt */
+        .btn:hover {
+            border-color: #f43f5e;
+            background-color: rgba(244, 63, 94, 0.1);
+        }
+
+        /* Üzenet sáv alul */
+        .message-area {
+            min-height: 24px;
+        }
+
+        #game-message {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #38bdf8;
+            letter-spacing: 0.5px;
+        }
+
+        #game-message.victory {
+            color: #4ade80;
+            font-weight: bold;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
 </head>
 <body>
 
@@ -17,7 +163,14 @@
         <div id="board" class="game-board"></div>
 
         <div class="controls">
-            <button id="reset-btn" class="btn">RESET GAME</button>
+            <select id="difficulty-select" class="select-difficulty">
+                <option value="5">Easy (5 steps)</option>
+                <option value="10" selected>Normal (10 steps)</option>
+                <option value="15">Hard (15 steps)</option>
+                <option value="30">Hardcore (30 steps)</option>
+            </select>
+            
+            <button id="reset-btn" class="btn">RESET</button>
         </div>
 
         <footer class="message-area">
@@ -29,22 +182,33 @@
         const BOARD_SIZE = 5;
         let board = [];
         let gameActive = true;
+        let currentDifficulty = 10; // Alapértelmezett a Normal (10 lépés)
 
         const boardContainer = document.getElementById('board');
         const messageElement = document.getElementById('game-message');
         const resetBtn = document.getElementById('reset-btn');
+        const difficultySelect = document.getElementById('difficulty-select');
 
-        // Azonnal elindítjuk, amint ideér a böngésző
+        // Játék indítása
         initGame();
 
+        // Eseménykezelők
         resetBtn.addEventListener('click', initGame);
+        
+        // Ha a játékos megváltoztatja a szintet, azonnal új játékot indítunk az új beállítással
+        difficultySelect.addEventListener('change', (e) => {
+            currentDifficulty = parseInt(e.target.value);
+            initGame();
+        });
 
         function initGame() {
             gameActive = true;
             messageElement.textContent = "Good luck! Find the pattern.";
             messageElement.classList.remove('victory');
             board = Array(BOARD_SIZE).fill(0).map(() => Array(BOARD_SIZE).fill(0));
-            shuffleBoard(15);
+            
+            // Most már a kiválasztott lépésszámot adjuk át
+            shuffleBoard(currentDifficulty);
             renderBoard();
         }
 
